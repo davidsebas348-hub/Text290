@@ -1,35 +1,39 @@
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
-
 local player = Players.LocalPlayer
 
--- Esperar personaje
-local function getCharacter()
-	return player.Character or player.CharacterAdded:Wait()
-end
+-- Esperar 1 segundo al ejecutar
+task.wait(1)
 
-local function getRoot()
-	local char = getCharacter()
-	return char:WaitForChild("HumanoidRootPart")
-end
-
--- Esperar rutas correctamente
-local kit = Workspace:WaitForChild("Kit")
-local clientsValue = kit:WaitForChild("Clients")
-
-local TELEPORT_POSITION = Vector3.new(-45, 5, -550)
-
--- Guardar valor inicial
-local lastValue = clientsValue.Value
-
-clientsValue:GetPropertyChangedSignal("Value"):Connect(function()
-	local newValue = clientsValue.Value
-	
-	-- Solo si era 0 y ahora no es 0
-	if lastValue == 0 and newValue ~= 0 then
-		local root = getRoot()
-		root.CFrame = CFrame.new(TELEPORT_POSITION)
+-- Buscar el prompt "Base" dentro de "LightSwitch"
+local function findBasePrompt()
+	for _, obj in pairs(Workspace:GetDescendants()) do
+		if obj:IsA("UnionOperation") and obj.Name == "Base" then
+			local prompt = obj:FindFirstChildOfClass("ProximityPrompt")
+			if prompt then
+				return prompt, obj
+			end
+		end
 	end
-	
-	lastValue = newValue
-end)
+	return nil, nil
+end
+
+-- Teleport + activar prompt
+local function teleportAndActivate(prompt, part)
+	local char = player.Character or player.CharacterAdded:Wait()
+	local root = char:WaitForChild("HumanoidRootPart")
+	root.CFrame = part.CFrame + Vector3.new(0,3,0)
+	task.wait(0.2)
+	pcall(function()
+		fireproximityprompt(prompt)
+	end)
+end
+
+-- Ejecutar
+local prompt, part = findBasePrompt()
+if prompt and part then
+	teleportAndActivate(prompt, part)
+	print("Se teletransportó y activó el prompt Base.")
+else
+	warn("No se encontró el prompt Base.")
+end
